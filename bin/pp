@@ -38,6 +38,7 @@ die() {
   printf 'pp: %s\n' "$msg" >&2
   exit "$code"
 }
+
 #######################################
 # Print usage to stderr and exit 2.
 # Globals:
@@ -63,11 +64,11 @@ usage() { printf 'usage: pp [-p MODE | --permissions[=MODE] | -p] <name>\n' >&2;
 #   0 on success; calls die on failure.
 #######################################
 preflight() {
-    command -v tmux    >/dev/null 2>&1 || die "tmux not found on PATH"
-    command -v claude  >/dev/null 2>&1 || die "claude not found on PATH"
-    command -v python3 >/dev/null 2>&1 || die "python3 not found on PATH"
-    [[ -d "$PROJECTS_DIR" ]] || die "$PROJECTS_DIR does not exist"
-    [[ -f "$TEMPLATE" ]]     || die "template missing at $TEMPLATE — see README"
+  command -v tmux    >/dev/null 2>&1 || die "tmux not found on PATH"
+  command -v claude  >/dev/null 2>&1 || die "claude not found on PATH"
+  command -v python3 >/dev/null 2>&1 || die "python3 not found on PATH"
+  [[ -d "$PROJECTS_DIR" ]] || die "$PROJECTS_DIR does not exist"
+  [[ -f "$TEMPLATE" ]]     || die "template missing at $TEMPLATE — see README"
 }
 
 #######################################
@@ -82,12 +83,12 @@ preflight() {
 #   0 always.
 #######################################
 compute_slug() {
-    local name="$1"
-    if [[ "$name" == pp-* ]]; then
-        printf '%s' "$name"
-    else
-        printf 'pp-%s' "$name"
-    fi
+  local name="$1"
+  if [[ "$name" == pp-* ]]; then
+    printf '%s' "$name"
+  else
+    printf 'pp-%s' "$name"
+  fi
 }
 
 #######################################
@@ -102,8 +103,8 @@ compute_slug() {
 #   0 on success; calls die on failure (exit 1).
 #######################################
 validate_slug() {
-    local slug="$1"
-    [[ "$slug" =~ ^[a-z0-9-]+$ ]] || die "invalid name, must match ^[a-z0-9-]+\$ (got: $slug)"
+  local slug="$1"
+  [[ "$slug" =~ ^[a-z0-9-]+$ ]] || die "invalid name, must match ^[a-z0-9-]+\$ (got: $slug)"
 }
 
 #######################################
@@ -118,7 +119,7 @@ validate_slug() {
 #   0 if alive, non-zero otherwise.
 #######################################
 tmux_session_alive() {
-    tmux has-session -t "$1" 2>/dev/null
+  tmux has-session -t "$1" 2>/dev/null
 }
 
 #######################################
@@ -134,14 +135,14 @@ tmux_session_alive() {
 #   0 on success.
 #######################################
 ensure_scaffolding() {
-    local target="$1"
-    mkdir -p "$target/.claude"
-    if [[ ! -f "$target/.claude/settings.local.json" ]]; then
-        cp "$TEMPLATE" "$target/.claude/settings.local.json"
-    fi
-    if [[ ! -f "$target/.claude/.iteration" ]]; then
-        printf '0\n' > "$target/.claude/.iteration"
-    fi
+  local target="$1"
+  mkdir -p "$target/.claude"
+  if [[ ! -f "$target/.claude/settings.local.json" ]]; then
+    cp "$TEMPLATE" "$target/.claude/settings.local.json"
+  fi
+  if [[ ! -f "$target/.claude/.iteration" ]]; then
+    printf '0\n' > "$target/.claude/.iteration"
+  fi
 }
 
 #######################################
@@ -156,12 +157,12 @@ ensure_scaffolding() {
 #   0 on success; calls die if .iteration is not an integer.
 #######################################
 bump_iteration() {
-    local target="$1"
-    local current; current="$(cat "$target/.claude/.iteration")"
-    [[ "$current" =~ ^[0-9]+$ ]] || die ".iteration is not a valid integer (got: $current)"
-    local next=$((current + 1))
-    printf '%d\n' "$next" > "$target/.claude/.iteration"
-    printf '%d' "$next"
+  local target="$1"
+  local current; current="$(cat "$target/.claude/.iteration")"
+  [[ "$current" =~ ^[0-9]+$ ]] || die ".iteration is not a valid integer (got: $current)"
+  local next=$((current + 1))
+  printf '%d\n' "$next" > "$target/.claude/.iteration"
+  printf '%d' "$next"
 }
 
 #######################################
@@ -177,7 +178,7 @@ bump_iteration() {
 #   0 on success.
 #######################################
 derive_uuid() {
-    python3 -c 'import sys, uuid; print(uuid.uuid5(uuid.NAMESPACE_URL, "pp:" + sys.argv[1]))' "$1"
+  python3 -c 'import sys, uuid; print(uuid.uuid5(uuid.NAMESPACE_URL, "pp:" + sys.argv[1]))' "$1"
 }
 
 #######################################
