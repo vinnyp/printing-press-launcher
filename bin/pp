@@ -7,6 +7,10 @@ PP_HOME="$(dirname "$SCRIPT_DIR")"
 TEMPLATE="$PP_HOME/template/settings.local.json"
 PROJECTS_DIR="${PP_PROJECTS_DIR:-$HOME/Projects}"
 
+# Populated by parse_args; consumed by main.
+g_name=""
+g_perm_mode=""
+
 #######################################
 # Print an error to stderr and exit.
 # Globals:
@@ -96,27 +100,130 @@ validate_permission_mode() {
   esac
 }
 
-main() {
-    [[ $# -eq 1 ]] || usage
-    preflight
-    local slug; slug="$(compute_slug "$1")"
-    validate_slug "$slug"
-    local target="$PROJECTS_DIR/$slug"
+#######################################
+# Interactive `select` picker for permission mode.
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   Writes the picker menu to stderr; echoes the chosen mode to stdout.
+# Returns:
+#   0 on selection. Caller is responsible for ensuring stdin is a TTY.
+#######################################
+pick_permission_mode() {
+  local mode
+  PS3='Select permission mode: '
+  select mode in default acceptEdits plan auto dontAsk; do
+    [[ -n "$mode" ]] && break
+  done
+  printf '%s' "$mode"
+}
 
-    if tmux_session_alive "$slug"; then
-        exec tmux attach -t "$slug"
+#######################################
+# Parse command-line arguments. Populates globals g_name and g_perm_mode.
+# Strict rule: -p / --permissions always consumes the next argv element as
+# the mode value when one is present. The select picker is invoked by passing
+# the flag as the LAST argv element (no following arg).
+# Globals:
+#   g_name       Written: the prefixed slug (e.g. "pp-parcel").
+#   g_perm_mode  Written: the resolved permission mode.
+# Arguments:
+#   $@ - original argv
+# Outputs:
+#   On error, writes usage or error message to stderr via die/usage.
+# Returns:
+#   0 on success. On error: usage() -> exit 2 or die ... 2.
+#######################################
+parse_args() {
+  local mode="dontAsk"
+  local positional=""
+  local saw_double_dash=0
+
+  while [[ $# -gt 0 ]]; do
+    if [[ $saw_double_dash -eq 1 ]]; then
+      [[ -z "$positional" ]] || die "too many positional arguments" 2
+      positional="$1"
+      shift
+      continue
     fi
+    case "$1" in
+      --)
+        saw_double_dash=1
+        shift
+        ;;
+      --permissions=*)
+        mode="${1#--permissions=}"
+        validate_permission_mode "$mode"
+        shift
+        ;;
+      -p|--permissions)
+        if [[ $# -ge 2 ]]; then
+          mode="$2"
+          validate_permission_mode "$mode"
+          shift 2
+        else
+          # Bare flag at end of argv → picker (if TTY).
+          if [[ -t 0 ]]; then
+            mode="$(pick_permission_mode)"
+          else
+            die "--permissions requires a value when stdin is not a tty" 2
+          fi
+          shift
+        fi
+        ;;
+      -*)
+        usage
+        ;;
+      *)
+        [[ -z "$positional" ]] || die "too many positional arguments" 2
+        positional="$1"
+        shift
+        ;;
+    esac
+  done
 
-    ensure_scaffolding "$target"
-    local iter; iter="$(bump_iteration "$target")"
-    local session_name; session_name="$(printf '%s-%02d' "$slug" "$iter")"
-    local session_uuid; session_uuid="$(derive_uuid "$session_name")"
+  [[ -n "$positional" ]] || usage
 
-    cd "$target"
-    tmux new-session -d -s "$slug" -c "$target"
-    tmux send-keys -t "$slug" \
-        "claude --permission-mode dontAsk -n $session_name --session-id $session_uuid" Enter
-    exec tmux attach -t "$slug"
+  g_name="$(compute_slug "$positional")"
+  validate_slug "$g_name"
+  g_perm_mode="$mode"
+}
+
+#######################################
+# Orchestrator: parse args, preflight, attach-or-launch.
+# Globals:
+#   g_name, g_perm_mode  Read after parse_args populates them.
+#   PROJECTS_DIR         Read.
+# Arguments:
+#   $@ - original argv (passed through to parse_args)
+# Outputs:
+#   On success, exec's tmux attach.
+# Returns:
+#   Does not return on success (exec). On error, exits non-zero via die/usage.
+#######################################
+main() {
+  parse_args "$@"
+  preflight
+  local target="$PROJECTS_DIR/$g_name"
+
+  if tmux_session_alive "$g_name"; then
+    exec tmux attach -t "$g_name"
+  fi
+
+  ensure_scaffolding "$target"
+  local iter
+  iter="$(bump_iteration "$target")"
+  local session_name
+  session_name="$(printf '%s-%02d' "$g_name" "$iter")"
+  local session_uuid
+  session_uuid="$(derive_uuid "$session_name")"
+
+  cd "$target"
+  tmux new-session -d -s "$g_name" -c "$target"
+  tmux send-keys -t "$g_name" \
+    "claude --permission-mode $g_perm_mode -n $session_name --session-id $session_uuid" Enter
+  exec tmux attach -t "$g_name"
 }
 
 # Source guard: when this script is sourced from tests, BASH_SOURCE[0] != $0,
