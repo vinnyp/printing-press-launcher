@@ -117,6 +117,7 @@ pick_permission_mode() {
   select mode in default acceptEdits plan auto dontAsk; do
     [[ -n "$mode" ]] && break
   done
+  [[ -n "$mode" ]] || die "no permission mode selected" 2
   printf '%s' "$mode"
 }
 
