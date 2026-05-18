@@ -83,4 +83,8 @@ main() {
     exec tmux attach -t "$slug"
 }
 
-main "$@"
+# Source guard: when this script is sourced from tests, BASH_SOURCE[0] != $0,
+# so we skip running main and let the test file call functions directly.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
