@@ -1,5 +1,7 @@
 # pp-setup
 
+![CI](https://github.com/vinnyp/printing-press-launcher/actions/workflows/ci.yml/badge.svg)
+
 `pp <name>` — bootstraps and resumes Claude Code projects intended for the [cli-printing-press](https://github.com/mvanhorn/cli-printing-press/) workflow.
 
 ## What it does
@@ -42,6 +44,39 @@ export PP_PROJECTS_DIR="$HOME/code"   # e.g. in your shell rc
 pp parcel                              # now creates ~/code/pp-parcel
 ```
 
+## Permissions
+
+By default, `pp` launches Claude with `--permission-mode dontAsk`. Override per-invocation with `-p` / `--permissions`:
+
+```bash
+pp parcel -p plan                    # plan mode
+pp parcel --permissions=acceptEdits  # accept-edits mode
+pp parcel -p auto                    # auto mode
+pp parcel -p                         # interactive picker (TTY only)
+```
+
+Valid modes: `default`, `acceptEdits`, `plan`, `auto`, `dontAsk`.
+
+The flag follows a strict rule: `-p` always consumes the next argument as the mode value when one is present. To launch the picker, put `-p` as the last argument (`pp parcel -p`). On non-TTY stdin, the picker is unavailable and bare `-p` errors out.
+
+If your project name collides with a mode (`plan`, `default`, `auto`):
+- `pp plan` works directly with the `dontAsk` default.
+- `pp plan -p` launches the picker for the project named `plan`.
+- `pp -p dontAsk plan` is an explicit form.
+
+## Development
+
+```bash
+make help    # list targets
+make lint    # shellcheck
+make test    # bats
+make check   # both (what CI runs)
+```
+
+Prerequisites (dev only): `shellcheck`, `bats-core`. On macOS: `brew install shellcheck bats-core coreutils`. On Debian/Ubuntu: `sudo apt-get install -y shellcheck bats`.
+
+CI runs `make check` on both `ubuntu-latest` and `macos-latest` on every push and pull request.
+
 ## Customizing per-project settings
 
 Edit [`template/settings.local.json`](template/settings.local.json). Every subsequent `pp <name>` run copies it into the new project's `.claude/`. Existing projects keep whatever was copied at their creation time.
@@ -63,8 +98,16 @@ Name is auto-prefixed with `pp-` if not already present. `pp parcel` and `pp pp-
 pp-setup/
 ├── bin/pp                          # the launcher
 ├── template/settings.local.json    # canonical Claude permissions
+├── test/                           # bats-core suite + stubs
+├── Makefile                        # lint / test / check targets
+├── .github/workflows/ci.yml        # CI on Linux + macOS
 ├── docs/superpowers/
 │   ├── specs/                      # design docs
 │   └── plans/                      # implementation plans
+├── LICENSE                         # MIT
 └── README.md
 ```
+
+## License
+
+[MIT](LICENSE) © Vinny Pasceri.
