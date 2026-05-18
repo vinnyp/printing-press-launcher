@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#
+# tmux stub for tests. Logs argv to $PPL_STUB_LOG. Returns exit codes that
+# make the launcher's branches deterministic.
+#
+
+printf 'tmux %s\n' "$*" >> "${PPL_STUB_LOG:-/dev/null}"
+
+case "${1:-}" in
+  has-session)
+    if [[ "${PPL_STUB_TMUX_SESSION_EXISTS:-false}" == "true" ]]; then
+      exit 0
+    fi
+    exit 1
+    ;;
+  *)
+    exit 0
+    ;;
+esac
