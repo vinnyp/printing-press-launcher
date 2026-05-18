@@ -36,7 +36,7 @@
 
 ## Task ordering rationale
 
-Tasks 1–3 add scaffolding (LICENSE, Makefile, stubs+helpers) that lets every subsequent task be testable. Task 4 adds the source-guard refactor with **no behavior change**, which unlocks unit tests in Tasks 5–6. Task 7 adds the comments per the style guide (pure documentation, no logic change). Task 8 adds the `--permissions` feature behind its own tests. Task 9 wires CI. Task 10 updates README. Task 11 does final cleanup + manual verification.
+Tasks 1–3 add scaffolding (LICENSE, Makefile, stubs+helpers) that lets every subsequent task be testable. Task 4 adds the source-guard refactor with **no behavior change**, which unlocks unit tests in Tasks 5–6. Task 7 adds the `--permissions` feature (parse_args, picker, main refactor) behind its own tests. Task 8 adds end-to-end integration tests. Task 9 adds Google-style header comments to all functions (pure documentation, no logic change). Task 10 runs ShellCheck. Task 11 wires CI. Task 12 updates README. Task 13 is manual verification.
 
 ---
 
