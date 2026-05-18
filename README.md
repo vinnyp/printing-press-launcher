@@ -43,7 +43,7 @@ By default, `ppl <name>` creates projects under `~/Projects/`. Override with the
 
 ```bash
 export PPL_PROJECTS_DIR="$HOME/code"   # e.g. in your shell rc
-ppl parcel                              # now creates ~/code/pp-parcel
+ppl <name>                             # now creates ~/code/pp-<name>
 ```
 
 ## Permissions
@@ -51,15 +51,15 @@ ppl parcel                              # now creates ~/code/pp-parcel
 By default, `ppl` launches Claude with `--permission-mode dontAsk`. Override per-invocation with `-p` / `--permissions`:
 
 ```bash
-ppl parcel -p plan                    # plan mode
-ppl parcel --permissions=acceptEdits  # accept-edits mode
-ppl parcel -p auto                    # auto mode
-ppl parcel -p                         # interactive picker (TTY only)
+ppl <name> -p plan                    # plan mode
+ppl <name> --permissions=acceptEdits  # accept-edits mode
+ppl <name> -p auto                    # auto mode
+ppl <name> -p                         # interactive picker (TTY only)
 ```
 
 Valid modes: `default`, `acceptEdits`, `plan`, `auto`, `dontAsk`.
 
-The flag follows a strict rule: `-p` always consumes the next argument as the mode value when one is present. To launch the picker, put `-p` as the last argument (`ppl parcel -p`). On non-TTY stdin, the picker is unavailable and bare `-p` errors out.
+The flag follows a strict rule: `-p` always consumes the next argument as the mode value when one is present. To launch the picker, put `-p` as the last argument (`ppl <name> -p`). On non-TTY stdin, the picker is unavailable and bare `-p` errors out.
 
 If your project name collides with a mode (`plan`, `default`, `auto`):
 - `ppl plan` works directly with the `dontAsk` default.
@@ -92,7 +92,7 @@ Edit [`template/settings.local.json`](template/settings.local.json). Every subse
 | exists | missing | not running | scaffold in place, `.iteration=0`, bump to `1`, launch iter `01` |
 | exists | present | not running | bump `.iteration`, launch next iter |
 
-Name is auto-prefixed with `pp-` if not already present. `ppl parcel` and `ppl pp-parcel` are equivalent. Names must match `^[a-z0-9-]+$`.
+Name is auto-prefixed with `pp-` if not already present. `ppl <name>` and `ppl pp-<name>` are equivalent. Names must match `^[a-z0-9-]+$`.
 
 ## Layout
 
