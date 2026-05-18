@@ -2,19 +2,19 @@
 set -euo pipefail
 
 #
-# pp — bootstrap and resume Claude Code projects for the cli-printing-press
+# ppl — bootstrap and resume Claude Code projects for the cli-printing-press
 # workflow. See README.md and docs/superpowers/specs/ for full design.
 #
 # Globals:
-#   PP_PROJECTS_DIR  Where projects live (default: $HOME/Projects).
-#   PP_HOME          Resolved repo root, used to find template/.
+#   PPL_PROJECTS_DIR  Where projects live (default: $HOME/Projects).
+#   PPL_HOME          Resolved repo root, used to find template/.
 #
 
-# Resolve this script's own dir so we can find the template no matter how `pp` is invoked.
+# Resolve this script's own dir so we can find the template no matter how `ppl` is invoked.
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-PP_HOME="$(dirname "$SCRIPT_DIR")"
-TEMPLATE="$PP_HOME/template/settings.local.json"
-PROJECTS_DIR="${PP_PROJECTS_DIR:-$HOME/Projects}"
+PPL_HOME="$(dirname "$SCRIPT_DIR")"
+TEMPLATE="$PPL_HOME/template/settings.local.json"
+PROJECTS_DIR="${PPL_PROJECTS_DIR:-$HOME/Projects}"
 
 # Populated by parse_args; consumed by main.
 g_name=""
@@ -28,14 +28,14 @@ g_perm_mode=""
 #   $1 - message
 #   $2 - optional exit code (default: 1)
 # Outputs:
-#   Writes "pp: <message>" to stderr.
+#   Writes "ppl: <message>" to stderr.
 # Returns:
 #   Exits with the given code (does not return).
 #######################################
 die() {
   local msg="$1"
   local code="${2:-1}"
-  printf 'pp: %s\n' "$msg" >&2
+  printf 'ppl: %s\n' "$msg" >&2
   exit "$code"
 }
 
@@ -46,11 +46,11 @@ die() {
 # Arguments:
 #   None
 # Outputs:
-#   "usage: pp [-p MODE | --permissions[=MODE] | -p] <name>" to stderr.
+#   "usage: ppl [-p MODE | --permissions[=MODE] | -p] <name>" to stderr.
 # Returns:
 #   Exits 2 (does not return).
 #######################################
-usage() { printf 'usage: pp [-p MODE | --permissions[=MODE] | -p] <name>\n' >&2; exit 2; }
+usage() { printf 'usage: ppl [-p MODE | --permissions[=MODE] | -p] <name>\n' >&2; exit 2; }
 
 #######################################
 # Verify required commands and paths are available before any side effects.

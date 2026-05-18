@@ -3,8 +3,8 @@
 load 'helpers/common.bash'
 
 setup() {
-  pp_setup_env
-  pp_source
+  ppl_setup_env
+  ppl_source
 }
 
 @test "validate_permission_mode accepts default" {
@@ -52,7 +52,7 @@ setup() {
 @test "die uses exit code 1 by default" {
   run die "test message"
   [ "$status" -eq 1 ]
-  [[ "$output" == "pp: test message" ]]
+  [[ "$output" == "ppl: test message" ]]
 }
 
 @test "die accepts custom exit code" {
@@ -130,12 +130,12 @@ setup() {
 }
 
 @test "parse_args: parcel -p with non-TTY stdin -> exit 2" {
-  run bash -c 'source "'"$PP_REPO_ROOT"'/bin/pp"; parse_args parcel -p' </dev/null
+  run bash -c 'source "'"$PPL_REPO_ROOT"'/bin/ppl"; parse_args parcel -p' </dev/null
   [ "$status" -eq 2 ]
   [[ "$output" == *"--permissions requires a value when stdin is not a tty"* ]]
 }
 
 @test "parse_args: bare -p with non-TTY stdin -> exit 2" {
-  run bash -c 'source "'"$PP_REPO_ROOT"'/bin/pp"; parse_args -p' </dev/null
+  run bash -c 'source "'"$PPL_REPO_ROOT"'/bin/ppl"; parse_args -p' </dev/null
   [ "$status" -eq 2 ]
 }

@@ -3,8 +3,8 @@
 load 'helpers/common.bash'
 
 setup() {
-  pp_setup_env
-  pp_source
+  ppl_setup_env
+  ppl_source
 }
 
 @test "compute_slug adds pp- prefix when missing" {

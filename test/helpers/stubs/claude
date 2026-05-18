@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# claude stub for tests. Logs argv to $PP_STUB_LOG. Always succeeds.
+# claude stub for tests. Logs argv to $PPL_STUB_LOG. Always succeeds.
 #
 
-printf 'claude %s\n' "$*" >> "${PP_STUB_LOG:-/dev/null}"
+printf 'claude %s\n' "$*" >> "${PPL_STUB_LOG:-/dev/null}"
 exit 0
