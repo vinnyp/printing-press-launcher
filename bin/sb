@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+#
+# sb — springboard: bootstrap and resume project workspaces. Pairs a tmux
+# session with an AI-agent session under one stable per-project name.
+# See README.md and docs/superpowers/specs/ for the full design.
+#
+# Globals:
+#   SB_PROJECTS_DIR  Where projects live (default: $HOME/Projects).
+#   SB_HOME          Resolved repo root, used to find template/.
+#
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+SB_HOME="$(dirname "$SCRIPT_DIR")"
+TEMPLATE="$SB_HOME/template/settings.local.json"
+PROJECTS_DIR="${SB_PROJECTS_DIR:-$HOME/Projects}"
+USAGE='usage: sb [--agent claude|gemini] [--fresh] <name>'
+
+# Populated by parse_args; consumed by main.
+g_name=""
+g_agent=""
+g_fresh=0
+
+die() { printf 'sb: %s\n' "$1" >&2; exit "${2:-1}"; }
+usage() { printf '%s\n' "$USAGE" >&2; exit 2; }
+
+# Source guard: tests source this file (BASH_SOURCE[0] != $0) and call functions
+# directly without running main.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
