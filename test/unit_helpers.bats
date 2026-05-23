@@ -68,3 +68,19 @@ setup() {
   run fresh_uuid
   [[ "$output" != "$first" ]]
 }
+
+@test "ensure_scaffolding creates .claude and settings, no .iteration" {
+  local target="$BATS_TEST_TMPDIR/proj/fresh"
+  ensure_scaffolding "$target"
+  [ -d "$target/.claude" ]
+  [ -f "$target/.claude/settings.local.json" ]
+  [ ! -f "$target/.claude/.iteration" ]
+}
+
+@test "ensure_scaffolding does not overwrite existing settings" {
+  local target="$BATS_TEST_TMPDIR/proj/existing"
+  mkdir -p "$target/.claude"
+  printf 'CUSTOM\n' > "$target/.claude/settings.local.json"
+  ensure_scaffolding "$target"
+  [ "$(cat "$target/.claude/settings.local.json")" = "CUSTOM" ]
+}
