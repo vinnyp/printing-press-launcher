@@ -53,3 +53,18 @@ setup() {
   [ "$status" -eq 2 ]
   [[ "$output" == *"unknown agent 'bogus'"* ]]
 }
+
+@test "derive_uuid test returns pinned UUIDv5 for sb:test" {
+  run derive_uuid test
+  [ "$status" -eq 0 ]
+  [ "$output" = "c24a89d6-d9a4-5122-a1a5-b3a6249b9d0b" ]
+}
+
+@test "fresh_uuid returns distinct valid uuids" {
+  run fresh_uuid
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$ ]]
+  local first="$output"
+  run fresh_uuid
+  [[ "$output" != "$first" ]]
+}

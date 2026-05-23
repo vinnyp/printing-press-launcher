@@ -34,6 +34,9 @@ agent_binary() {
   esac
 }
 
+derive_uuid() { python3 -c 'import sys, uuid; print(uuid.uuid5(uuid.NAMESPACE_URL, "sb:" + sys.argv[1]))' "$1"; }
+fresh_uuid() { python3 -c 'import uuid; print(uuid.uuid4())'; }
+
 # Source guard: tests source this file (BASH_SOURCE[0] != $0) and call functions
 # directly without running main.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
