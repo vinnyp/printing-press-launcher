@@ -2,6 +2,20 @@
 
 Date: 2026-05-23
 
+## Amendment (2026-05-23): gemini → antigravity-cli (`agy`), per-agent session flags
+
+gemini-cli is being deprecated in favor of antigravity-cli (`agy`), which resumes
+sessions with `--conversation <id>` rather than `--session-id <id>`. This breaks the
+"all agents accept `--session-id`" assumption below. As implemented (and shipped):
+
+- The second agent is **`agy`**, not `gemini`. Default remains `claude`.
+- The agent table is the function **`agent_cmd`** (not `agent_binary`). It echoes
+  `"<binary> <session-flag>"` per agent — `claude --session-id`, `agy --conversation`
+  — and `main` appends the session id. Preflight derives the binary as the first
+  token. Adding an agent with a different flag is still a one-line `case` arm.
+- The "Agent abstraction" code block and the `--session-id` assumption paragraph
+  below are superseded by this note; the rest of the design is unchanged.
+
 ## Summary
 
 Generalize the `printing-press-launcher` (`ppl`) into **springboard** — a generic

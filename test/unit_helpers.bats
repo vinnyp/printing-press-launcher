@@ -36,20 +36,20 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-@test "agent_binary returns claude" {
-  run agent_binary claude
+@test "agent_cmd returns claude invocation (--session-id)" {
+  run agent_cmd claude
   [ "$status" -eq 0 ]
-  [ "$output" = "claude" ]
+  [ "$output" = "claude --session-id" ]
 }
 
-@test "agent_binary returns gemini" {
-  run agent_binary gemini
+@test "agent_cmd returns agy invocation (--conversation)" {
+  run agent_cmd agy
   [ "$status" -eq 0 ]
-  [ "$output" = "gemini" ]
+  [ "$output" = "agy --conversation" ]
 }
 
-@test "agent_binary rejects unknown agent with exit 2" {
-  run agent_binary bogus
+@test "agent_cmd rejects unknown agent with exit 2" {
+  run agent_cmd bogus
   [ "$status" -eq 2 ]
   [[ "$output" == *"unknown agent 'bogus'"* ]]
 }
