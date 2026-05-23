@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+#
+# sb — springboard: bootstrap and resume project workspaces. Pairs a tmux
+# session with an AI-agent session under one stable per-project name.
+# See README.md and docs/superpowers/specs/ for the full design.
+#
+# Globals:
+#   SB_PROJECTS_DIR  Where projects live (default: $HOME/Projects).
+#   SB_HOME          Resolved repo root, used to find template/.
+#
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+SB_HOME="$(dirname "$SCRIPT_DIR")"
+TEMPLATE="$SB_HOME/template/settings.local.json"
+PROJECTS_DIR="${SB_PROJECTS_DIR:-$HOME/Projects}"
+USAGE='usage: sb [--agent claude|gemini] [--fresh] <name>'
+
+# Populated by parse_args; consumed by main.
+g_name=""
+g_agent=""
+g_fresh=0
+
+die() { printf 'sb: %s\n' "$1" >&2; exit "${2:-1}"; }
+usage() { printf '%s\n' "$USAGE" >&2; exit 2; }
+validate_name() { [[ "$1" =~ ^[a-z0-9-]+$ ]] || die "invalid name, must match ^[a-z0-9-]+\$ (got: $1)"; }
+
+agent_binary() {
+  case "$1" in
+    claude) printf 'claude' ;;
+    gemini) printf 'gemini' ;;
+    *) die "unknown agent '$1' (valid: claude, gemini)" 2 ;;
+  esac
+}
+
+derive_uuid() { python3 -c 'import sys, uuid; print(uuid.uuid5(uuid.NAMESPACE_URL, "sb:" + sys.argv[1]))' "$1"; }
+fresh_uuid() { python3 -c 'import uuid; print(uuid.uuid4())'; }
+
+tmux_session_alive() { tmux has-session -t "$1" 2>/dev/null; }
+ensure_scaffolding() {
+  local target="$1"
+  mkdir -p "$target/.claude"
+  [[ -f "$target/.claude/settings.local.json" ]] || cp "$TEMPLATE" "$target/.claude/settings.local.json"
+}
+
+parse_args() {
+  local agent="claude" fresh=0 positional="" saw_double_dash=0
+  while [[ $# -gt 0 ]]; do
+    if [[ $saw_double_dash -eq 1 ]]; then
+      [[ -z "$positional" ]] || die "too many positional arguments" 2
+      positional="$1"; shift; continue
+    fi
+    case "$1" in
+      --) saw_double_dash=1; shift ;;
+      -h|--help) printf '%s\n' "$USAGE"; exit 0 ;;
+      --fresh) fresh=1; shift ;;
+      --agent=*) agent="${1#--agent=}"; shift ;;
+      --agent)
+        [[ $# -ge 2 ]] || die "--agent requires a value" 2
+        agent="$2"; shift 2 ;;
+      -*) usage ;;
+      *)
+        [[ -z "$positional" ]] || die "too many positional arguments" 2
+        positional="$1"; shift ;;
+    esac
+  done
+  [[ -n "$positional" ]] || usage
+  validate_name "$positional"
+  agent_binary "$agent" >/dev/null   # validates agent or dies 2
+  g_name="$positional"; g_agent="$agent"; g_fresh="$fresh"
+}
+
+preflight() {
+  local agent_bin; agent_bin="$(agent_binary "$g_agent")"
+  command -v tmux         >/dev/null 2>&1 || die "tmux not found on PATH"
+  command -v "$agent_bin" >/dev/null 2>&1 || die "$agent_bin not found on PATH"
+  command -v python3      >/dev/null 2>&1 || die "python3 not found on PATH"
+  [[ -d "$PROJECTS_DIR" ]] || die "$PROJECTS_DIR does not exist"
+  [[ -f "$TEMPLATE" ]]     || die "template missing at $TEMPLATE — see README"
+}
+
+main() {
+  parse_args "$@"
+  preflight
+  local target="$PROJECTS_DIR/$g_name"
+  if tmux_session_alive "$g_name"; then
+    exec tmux attach -t "$g_name"
+  fi
+  ensure_scaffolding "$target"
+  local session_uuid
+  if [[ "$g_fresh" -eq 1 ]]; then
+    session_uuid="$(fresh_uuid)"
+  else
+    session_uuid="$(derive_uuid "$g_name")"
+  fi
+  local agent_bin; agent_bin="$(agent_binary "$g_agent")"
+  cd "$target"
+  tmux new-session -d -s "$g_name" -c "$target"
+  tmux send-keys -t "$g_name" "$agent_bin --session-id $session_uuid" Enter
+  printf 'sb: detached with Ctrl-b d · resume with: sb %s\n' "$g_name" >&2
+  exec tmux attach -t "$g_name"
+}
+
+# Source guard: tests source this file (BASH_SOURCE[0] != $0) and call functions
+# directly without running main.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

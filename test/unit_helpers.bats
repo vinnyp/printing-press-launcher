@@ -3,90 +3,103 @@
 load 'helpers/common.bash'
 
 setup() {
-  ppl_setup_env
-  ppl_source
+  sb_setup_env
+  sb_source
 }
 
-@test "compute_slug adds pp- prefix when missing" {
-  run compute_slug parcel
-  [ "$status" -eq 0 ]
-  [ "$output" = "pp-parcel" ]
+@test "die default exit 1 with sb prefix" {
+  run die "boom"
+  [ "$status" -eq 1 ]
+  [[ "$output" == "sb: boom" ]]
 }
 
-@test "compute_slug keeps pp- prefix when already present" {
-  run compute_slug pp-parcel
-  [ "$status" -eq 0 ]
-  [ "$output" = "pp-parcel" ]
+@test "die accepts a custom exit code" {
+  run die "boom" 2
+  [ "$status" -eq 2 ]
 }
 
-@test "validate_slug accepts valid slugs" {
-  run validate_slug pp-foo
+@test "validate_name accepts valid slugs" {
+  run validate_name numista
   [ "$status" -eq 0 ]
-  run validate_slug pp-foo-1
-  [ "$status" -eq 0 ]
-  run validate_slug pp-a-b-c
+  run validate_name my-proj-1
   [ "$status" -eq 0 ]
 }
 
-@test "validate_slug rejects invalid slugs" {
-  run validate_slug "foo bar"
+@test "validate_name rejects invalid slugs" {
+  run validate_name "foo bar"
   [ "$status" -ne 0 ]
-  run validate_slug "Foo"
+  run validate_name "Foo"
   [ "$status" -ne 0 ]
-  run validate_slug ""
+  run validate_name ""
   [ "$status" -ne 0 ]
-  run validate_slug "pp_foo"
+  run validate_name "pp_foo"
   [ "$status" -ne 0 ]
 }
 
-@test "bump_iteration: 0 -> 1" {
-  local target="$BATS_TEST_TMPDIR/proj/pp-test"
-  mkdir -p "$target/.claude"
-  printf '0\n' > "$target/.claude/.iteration"
-  run bump_iteration "$target"
+@test "agent_binary returns claude" {
+  run agent_binary claude
   [ "$status" -eq 0 ]
-  [ "$output" = "1" ]
-  [ "$(cat "$target/.claude/.iteration")" = "1" ]
+  [ "$output" = "claude" ]
 }
 
-@test "bump_iteration: 9 -> 10" {
-  local target="$BATS_TEST_TMPDIR/proj/pp-test"
-  mkdir -p "$target/.claude"
-  printf '9\n' > "$target/.claude/.iteration"
-  run bump_iteration "$target"
+@test "agent_binary returns gemini" {
+  run agent_binary gemini
   [ "$status" -eq 0 ]
-  [ "$output" = "10" ]
-  [ "$(cat "$target/.claude/.iteration")" = "10" ]
+  [ "$output" = "gemini" ]
 }
 
-@test "bump_iteration: rejects non-integer" {
-  local target="$BATS_TEST_TMPDIR/proj/pp-test"
-  mkdir -p "$target/.claude"
-  printf 'abc\n' > "$target/.claude/.iteration"
-  run bump_iteration "$target"
-  [ "$status" -ne 0 ]
+@test "agent_binary rejects unknown agent with exit 2" {
+  run agent_binary bogus
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"unknown agent 'bogus'"* ]]
 }
 
-@test "derive_uuid pp-parcel-01 returns pinned UUIDv5" {
-  run derive_uuid pp-parcel-01
+@test "derive_uuid test returns pinned UUIDv5 for sb:test" {
+  run derive_uuid test
   [ "$status" -eq 0 ]
-  [ "$output" = "8c271dfc-73c6-5318-89b2-891608f9c4b2" ]
+  [ "$output" = "c24a89d6-d9a4-5122-a1a5-b3a6249b9d0b" ]
 }
 
-@test "ensure_scaffolding creates fresh project layout" {
-  local target="$BATS_TEST_TMPDIR/proj/pp-fresh"
+@test "fresh_uuid returns distinct valid uuids" {
+  run fresh_uuid
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$ ]]
+  local first="$output"
+  run fresh_uuid
+  [[ "$output" != "$first" ]]
+}
+
+@test "ensure_scaffolding creates .claude and settings, no .iteration" {
+  local target="$BATS_TEST_TMPDIR/proj/fresh"
   ensure_scaffolding "$target"
   [ -d "$target/.claude" ]
   [ -f "$target/.claude/settings.local.json" ]
-  [ "$(cat "$target/.claude/.iteration")" = "0" ]
+  [ ! -f "$target/.claude/.iteration" ]
 }
 
-@test "ensure_scaffolding does not overwrite existing template" {
-  local target="$BATS_TEST_TMPDIR/proj/pp-existing"
+@test "ensure_scaffolding does not overwrite existing settings" {
+  local target="$BATS_TEST_TMPDIR/proj/existing"
   mkdir -p "$target/.claude"
   printf 'CUSTOM\n' > "$target/.claude/settings.local.json"
-  printf '7\n' > "$target/.claude/.iteration"
   ensure_scaffolding "$target"
   [ "$(cat "$target/.claude/settings.local.json")" = "CUSTOM" ]
-  [ "$(cat "$target/.claude/.iteration")" = "7" ]
+}
+
+@test "preflight passes with stubs on PATH and dirs present" {
+  g_agent=claude
+  run preflight
+  [ "$status" -eq 0 ]
+}
+
+@test "preflight dies when projects dir is missing" {
+  g_agent=claude
+  PROJECTS_DIR="$BATS_TEST_TMPDIR/does-not-exist"
+  run preflight
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"does not exist"* ]]
+}
+
+@test "template is permissions-only (defaultMode acceptEdits, no skills)" {
+  grep -q '"defaultMode": "acceptEdits"' "$SB_REPO_ROOT/template/settings.local.json"
+  ! grep -q 'Skill(' "$SB_REPO_ROOT/template/settings.local.json"
 }

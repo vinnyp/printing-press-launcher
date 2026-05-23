@@ -1,70 +1,98 @@
-# ppl (printing-press-launcher)
+# springboard (`sb`)
 
-![CI](https://github.com/vinnyp/printing-press-launcher/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/vinnyp/springboard/actions/workflows/ci.yml/badge.svg)
 
-> Previously named `pp`. Renamed to `ppl` to avoid collision with PAR Packager (`/usr/bin/pp`).
-
-`ppl <name>` — bootstraps and resumes Claude Code projects intended for the [cli-printing-press](https://github.com/mvanhorn/cli-printing-press/) workflow.
+`sb <name>` — bootstraps and resumes a project workspace, pairing a tmux session
+with an AI-agent session under one stable per-project name.
 
 ## What it does
 
 ```
-ppl parcel
+sb numista
 ```
 
-1. Validates the name and checks that `tmux`, `claude`, and `python3` are on `PATH`.
-2. If a tmux session named `pp-parcel` is already running, attaches to it immediately. No disk writes. Done.
-3. Otherwise, ensures `$PPL_PROJECTS_DIR/pp-parcel/` (default `~/Projects/pp-parcel/`) exists with `.claude/settings.local.json` copied from the canonical [template](template/settings.local.json) and a `.iteration` counter.
-4. Bumps `.iteration`, starts a new tmux session `pp-parcel`, and inside it launches:
+1. Validates the name (`^[a-z0-9-]+$`) and checks that `tmux`, the agent (`claude`
+   by default), and `python3` are on `PATH`.
+2. If a tmux session named `numista` is already running, attaches to it. No disk
+   writes. Done.
+3. Otherwise, ensures `$SB_PROJECTS_DIR/numista/` (default `~/Projects/numista/`)
+   exists with `.claude/settings.local.json` copied from the
+   [template](template/settings.local.json).
+4. Starts a detached tmux session `numista` and launches the agent inside it,
+   resuming the project's stable session:
 
    ```
-   claude --permission-mode dontAsk -n pp-parcel-NN --session-id <deterministic-uuid>
+   claude --session-id <uuid>
    ```
 
-   The session ID is a UUIDv5 derived from `pp:pp-parcel-NN`, so the same iteration is always the same Claude session — a killed tmux can be revived by re-running `ppl parcel` after rolling `.iteration` back by hand.
+   The session id is a UUIDv5 derived from `sb:numista`, so `sb numista` always
+   resumes the same conversation. Use `--fresh` to start a brand-new session.
 
-The full design lives in [`docs/superpowers/specs/2026-05-17-pp-launcher-design.md`](docs/superpowers/specs/2026-05-17-pp-launcher-design.md).
+The full design lives in
+[`docs/superpowers/specs/2026-05-23-springboard-launcher-design.md`](docs/superpowers/specs/2026-05-23-springboard-launcher-design.md).
 
 ## Install
 
 ```bash
-# Clone wherever you keep your tools
-git clone <this-repo> /path/to/printing-press-launcher
-ln -sf /path/to/printing-press-launcher/bin/ppl ~/.local/bin/ppl
+git clone <this-repo> /path/to/springboard
+ln -sf /path/to/springboard/bin/sb ~/.local/bin/sb
 ```
 
-Make sure `~/.local/bin` is on `PATH`; `ppl` is then available in every shell.
+Make sure `~/.local/bin` is on `PATH`. Requirements on `PATH`: `tmux`, your agent
+(`claude` and/or `gemini`), `python3`. macOS without GNU coreutils may need
+`brew install coreutils` — `bin/sb` uses `readlink -f` to resolve its own symlink.
 
-Requirements on `PATH`: `tmux`, `claude`, `python3`. macOS without GNU coreutils may need `brew install coreutils` — `bin/ppl` uses `readlink -f` to resolve its own symlinked location.
+## Agents
+
+`sb` launches `claude` by default. Choose another agent with `--agent`:
+
+```bash
+sb numista --agent gemini
+```
+
+Supported: `claude`, `gemini`. Both are launched with `--session-id <uuid>`. The
+chosen agent must be installed and on `PATH` (e.g. `--agent gemini` requires
+gemini-cli). Adding a new agent is a one-line entry in `agent_binary` in `bin/sb`.
+
+## Sessions
+
+- `sb <name>` resumes the project's stable session every time — attaches if the
+  tmux session is live, otherwise relaunches the agent resuming the saved
+  conversation.
+- `sb <name> --fresh` mints a brand-new session id for this launch (not persisted;
+  the next plain `sb <name>` returns to the stable session).
+- To step away without ending anything, detach tmux with `Ctrl-b d`; `sb <name>`
+  re-attaches. To fully close out, quit the agent and exit the shell; `sb <name>`
+  later resumes the saved conversation. `sb` prints this hint on each launch.
 
 ## Configuration
 
-By default, `ppl <name>` creates projects under `~/Projects/`. Override with the `PPL_PROJECTS_DIR` env var:
+Projects live under `~/Projects/` by default. Override with `SB_PROJECTS_DIR`:
 
 ```bash
-export PPL_PROJECTS_DIR="$HOME/code"   # e.g. in your shell rc
-ppl <name>                             # now creates ~/code/pp-<name>
+export SB_PROJECTS_DIR="$HOME/code"
+sb numista                # now uses ~/code/numista
 ```
 
-## Permissions
+## Behavior matrix
 
-By default, `ppl` launches Claude with `--permission-mode dontAsk`. Override per-invocation with `-p` / `--permissions`:
+| Project dir | tmux session | Outcome |
+|---|---|---|
+| any | running | `tmux attach` — warm resume, no relaunch |
+| missing | not running | create dir + template, launch with stable session id |
+| exists | not running | resume: stable session id, scaffold only what's missing |
+| (any of the above) + `--fresh` | not running | launch with a random session id instead |
 
-```bash
-ppl <name> -p plan                    # plan mode
-ppl <name> --permissions=acceptEdits  # accept-edits mode
-ppl <name> -p auto                    # auto mode
-ppl <name> -p                         # interactive picker (TTY only)
-```
+Names must match `^[a-z0-9-]+$`. There is **no** auto-prefix — `sb numista` uses
+`~/Projects/numista` exactly.
 
-Valid modes: `default`, `acceptEdits`, `plan`, `auto`, `dontAsk`.
+## Customizing per-project settings
 
-The flag follows a strict rule: `-p` always consumes the next argument as the mode value when one is present. To launch the picker, put `-p` as the last argument (`ppl <name> -p`). On non-TTY stdin, the picker is unavailable and bare `-p` errors out.
-
-If your project name collides with a mode (`plan`, `default`, `auto`):
-- `ppl plan` works directly with the `dontAsk` default.
-- `ppl plan -p` launches the picker for the project named `plan`.
-- `ppl -p dontAsk plan` is an explicit form.
+[`template/settings.local.json`](template/settings.local.json) is **permissions
+only** — it sets `permissions.defaultMode` to `acceptEdits` and contains no skills.
+Each `sb <name>` copies it into a new project's `.claude/`. Add whatever skills a
+project needs by editing that project's `.claude/settings.local.json` yourself;
+different projects can have different skills.
 
 ## Development
 
@@ -75,37 +103,20 @@ make test    # bats
 make check   # both (what CI runs)
 ```
 
-Prerequisites (dev only): `shellcheck`, `bats-core`. On macOS: `brew install shellcheck bats-core coreutils`. On Debian/Ubuntu: `sudo apt-get install -y shellcheck bats`.
-
-CI runs `make check` on both `ubuntu-latest` and `macos-latest` on every push and pull request.
-
-## Customizing per-project settings
-
-Edit [`template/settings.local.json`](template/settings.local.json). Every subsequent `ppl <name>` run copies it into the new project's `.claude/`. Existing projects keep whatever was copied at their creation time.
-
-## Behavior matrix
-
-| Project dir | `.claude/` scaffolding | tmux session | Outcome |
-|---|---|---|---|
-| any | any | running | `tmux attach` — no Claude relaunch |
-| missing | n/a | not running | create dir + template + `.iteration=0`, bump to `1`, launch iter `01` |
-| exists | missing | not running | scaffold in place, `.iteration=0`, bump to `1`, launch iter `01` |
-| exists | present | not running | bump `.iteration`, launch next iter |
-
-Name is auto-prefixed with `pp-` if not already present. `ppl <name>` and `ppl pp-<name>` are equivalent. Names must match `^[a-z0-9-]+$`.
+Prerequisites (dev only): `shellcheck`, `bats-core`. macOS: `brew install
+shellcheck bats-core coreutils`. Debian/Ubuntu: `sudo apt-get install -y shellcheck
+bats`. CI runs `make check` on `ubuntu-latest` and `macos-latest`.
 
 ## Layout
 
 ```
-ppl/
-├── bin/ppl                         # the launcher
-├── template/settings.local.json    # canonical Claude permissions
+springboard/
+├── bin/sb                          # the launcher
+├── template/settings.local.json    # permissions-only project template
 ├── test/                           # bats-core suite + stubs
 ├── Makefile                        # lint / test / check targets
 ├── .github/workflows/ci.yml        # CI on Linux + macOS
-├── docs/superpowers/
-│   ├── specs/                      # design docs
-│   └── plans/                      # implementation plans
+├── docs/superpowers/               # specs and plans
 ├── LICENSE                         # MIT
 └── README.md
 ```
