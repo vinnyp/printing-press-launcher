@@ -17,3 +17,21 @@ setup() {
   run die "boom" 2
   [ "$status" -eq 2 ]
 }
+
+@test "validate_name accepts valid slugs" {
+  run validate_name numista
+  [ "$status" -eq 0 ]
+  run validate_name my-proj-1
+  [ "$status" -eq 0 ]
+}
+
+@test "validate_name rejects invalid slugs" {
+  run validate_name "foo bar"
+  [ "$status" -ne 0 ]
+  run validate_name "Foo"
+  [ "$status" -ne 0 ]
+  run validate_name ""
+  [ "$status" -ne 0 ]
+  run validate_name "pp_foo"
+  [ "$status" -ne 0 ]
+}
