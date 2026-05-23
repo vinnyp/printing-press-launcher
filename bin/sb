@@ -71,6 +71,15 @@ parse_args() {
   g_name="$positional"; g_agent="$agent"; g_fresh="$fresh"
 }
 
+preflight() {
+  local agent_bin; agent_bin="$(agent_binary "$g_agent")"
+  command -v tmux         >/dev/null 2>&1 || die "tmux not found on PATH"
+  command -v "$agent_bin" >/dev/null 2>&1 || die "$agent_bin not found on PATH"
+  command -v python3      >/dev/null 2>&1 || die "python3 not found on PATH"
+  [[ -d "$PROJECTS_DIR" ]] || die "$PROJECTS_DIR does not exist"
+  [[ -f "$TEMPLATE" ]]     || die "template missing at $TEMPLATE — see README"
+}
+
 # Source guard: tests source this file (BASH_SOURCE[0] != $0) and call functions
 # directly without running main.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then

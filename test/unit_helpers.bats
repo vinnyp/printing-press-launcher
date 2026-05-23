@@ -84,3 +84,17 @@ setup() {
   ensure_scaffolding "$target"
   [ "$(cat "$target/.claude/settings.local.json")" = "CUSTOM" ]
 }
+
+@test "preflight passes with stubs on PATH and dirs present" {
+  g_agent=claude
+  run preflight
+  [ "$status" -eq 0 ]
+}
+
+@test "preflight dies when projects dir is missing" {
+  g_agent=claude
+  PROJECTS_DIR="$BATS_TEST_TMPDIR/does-not-exist"
+  run preflight
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"does not exist"* ]]
+}
