@@ -98,3 +98,8 @@ setup() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"does not exist"* ]]
 }
+
+@test "template is permissions-only (defaultMode acceptEdits, no skills)" {
+  grep -q '"defaultMode": "acceptEdits"' "$SB_REPO_ROOT/template/settings.local.json"
+  ! grep -q 'Skill(' "$SB_REPO_ROOT/template/settings.local.json"
+}

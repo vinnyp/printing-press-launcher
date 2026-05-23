@@ -1,25 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash",
-      "Edit",
-      "Fetch",
-      "Read",
-      "Skill(checking-env)",
-      "Skill(cli-printing-press:printing-press)",
-      "Skill(cli-printing-press:printing-press-amend)",
-      "Skill(cli-printing-press:printing-press-polish)",
-      "Skill(cli-printing-press:printing-press-retro)",
-      "Skill(cli-printing-press:printing-press-score)",
-      "Skill(fetching-bot-blocked-urls)",
-      "Skill(superpowers:brainstorming)",
-      "Skill(superpowers:finishing-a-development-branch)",
-      "Skill(superpowers:requesting-code-review)",
-      "Skill(superpowers:subagent-driven-development)",
-      "Skill(superpowers:writing-plans)",
-      "WebFetch",
-      "WebSearch",
-      "Write"
-    ]
+    "defaultMode": "acceptEdits"
   }
 }
