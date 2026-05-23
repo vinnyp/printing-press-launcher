@@ -80,6 +80,28 @@ preflight() {
   [[ -f "$TEMPLATE" ]]     || die "template missing at $TEMPLATE — see README"
 }
 
+main() {
+  parse_args "$@"
+  preflight
+  local target="$PROJECTS_DIR/$g_name"
+  if tmux_session_alive "$g_name"; then
+    exec tmux attach -t "$g_name"
+  fi
+  ensure_scaffolding "$target"
+  local session_uuid
+  if [[ "$g_fresh" -eq 1 ]]; then
+    session_uuid="$(fresh_uuid)"
+  else
+    session_uuid="$(derive_uuid "$g_name")"
+  fi
+  local agent_bin; agent_bin="$(agent_binary "$g_agent")"
+  cd "$target"
+  tmux new-session -d -s "$g_name" -c "$target"
+  tmux send-keys -t "$g_name" "$agent_bin --session-id $session_uuid" Enter
+  printf 'sb: detached with Ctrl-b d · resume with: sb %s\n' "$g_name" >&2
+  exec tmux attach -t "$g_name"
+}
+
 # Source guard: tests source this file (BASH_SOURCE[0] != $0) and call functions
 # directly without running main.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
