@@ -39,7 +39,7 @@ ln -sf /path/to/springboard/bin/sb ~/.local/bin/sb
 ```
 
 Make sure `~/.local/bin` is on `PATH`. Requirements on `PATH`: `tmux`, your agent
-(`claude` and/or `gemini`), `python3`. macOS without GNU coreutils may need
+(`claude` and/or `agy`), `python3`. macOS without GNU coreutils may need
 `brew install coreutils` — `bin/sb` uses `readlink -f` to resolve its own symlink.
 
 ## Agents
@@ -47,12 +47,14 @@ Make sure `~/.local/bin` is on `PATH`. Requirements on `PATH`: `tmux`, your agen
 `sb` launches `claude` by default. Choose another agent with `--agent`:
 
 ```bash
-sb numista --agent gemini
+sb numista --agent agy
 ```
 
-Supported: `claude`, `gemini`. Both are launched with `--session-id <uuid>`. The
-chosen agent must be installed and on `PATH` (e.g. `--agent gemini` requires
-gemini-cli). Adding a new agent is a one-line entry in `agent_binary` in `bin/sb`.
+Supported: `claude` (launched with `--session-id <uuid>`) and `agy`
+(antigravity-cli, launched with `--conversation <uuid>`). Each agent carries its
+own session flag, so the same stable id resumes a project regardless of agent. The
+chosen agent must be installed and on `PATH` (e.g. `--agent agy` requires
+antigravity-cli). Adding a new agent is a one-line entry in `agent_cmd` in `bin/sb`.
 
 ## Sessions
 

@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-#
-# gemini stub for tests. Logs argv to $SB_STUB_LOG. Always succeeds.
-#
-
-printf 'gemini %s\n' "$*" >> "${SB_STUB_LOG:-/dev/null}"
-exit 0

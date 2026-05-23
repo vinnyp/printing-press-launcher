@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 SB_HOME="$(dirname "$SCRIPT_DIR")"
 TEMPLATE="$SB_HOME/template/settings.local.json"
 PROJECTS_DIR="${SB_PROJECTS_DIR:-$HOME/Projects}"
-USAGE='usage: sb [--agent claude|gemini] [--fresh] <name>'
+USAGE='usage: sb [--agent claude|agy] [--fresh] <name>'
 
 # Populated by parse_args; consumed by main.
 g_name=""
@@ -26,11 +26,14 @@ die() { printf 'sb: %s\n' "$1" >&2; exit "${2:-1}"; }
 usage() { printf '%s\n' "$USAGE" >&2; exit 2; }
 validate_name() { [[ "$1" =~ ^[a-z0-9-]+$ ]] || die "invalid name, must match ^[a-z0-9-]+\$ (got: $1)"; }
 
-agent_binary() {
+# Echoes "<binary> <session-flag>" for an agent — the launch command minus the
+# session id, which the caller appends. One arm per agent, each carrying its own
+# session flag (claude: --session-id, agy: --conversation). Dies on unknown agent.
+agent_cmd() {
   case "$1" in
-    claude) printf 'claude' ;;
-    gemini) printf 'gemini' ;;
-    *) die "unknown agent '$1' (valid: claude, gemini)" 2 ;;
+    claude) printf 'claude --session-id' ;;
+    agy)    printf 'agy --conversation' ;;
+    *) die "unknown agent '$1' (valid: claude, agy)" 2 ;;
   esac
 }
 
@@ -67,12 +70,12 @@ parse_args() {
   done
   [[ -n "$positional" ]] || usage
   validate_name "$positional"
-  agent_binary "$agent" >/dev/null   # validates agent or dies 2
+  agent_cmd "$agent" >/dev/null   # validates agent or dies 2
   g_name="$positional"; g_agent="$agent"; g_fresh="$fresh"
 }
 
 preflight() {
-  local agent_bin; agent_bin="$(agent_binary "$g_agent")"
+  local agent_bin; agent_bin="$(agent_cmd "$g_agent")"; agent_bin="${agent_bin%% *}"
   command -v tmux         >/dev/null 2>&1 || die "tmux not found on PATH"
   command -v "$agent_bin" >/dev/null 2>&1 || die "$agent_bin not found on PATH"
   command -v python3      >/dev/null 2>&1 || die "python3 not found on PATH"
@@ -94,10 +97,9 @@ main() {
   else
     session_uuid="$(derive_uuid "$g_name")"
   fi
-  local agent_bin; agent_bin="$(agent_binary "$g_agent")"
   cd "$target"
   tmux new-session -d -s "$g_name" -c "$target"
-  tmux send-keys -t "$g_name" "$agent_bin --session-id $session_uuid" Enter
+  tmux send-keys -t "$g_name" "$(agent_cmd "$g_agent") $session_uuid" Enter
   printf 'sb: detached with Ctrl-b d · resume with: sb %s\n' "$g_name" >&2
   exec tmux attach -t "$g_name"
 }

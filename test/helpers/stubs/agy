@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#
+# agy stub for tests. Logs argv to $SB_STUB_LOG. Always succeeds.
+#
+
+printf 'agy %s\n' "$*" >> "${SB_STUB_LOG:-/dev/null}"
+exit 0

@@ -14,15 +14,15 @@ setup() {
   [ "$g_fresh" -eq 0 ]
 }
 
-@test "--agent gemini numista" {
-  parse_args --agent gemini numista
+@test "--agent agy numista" {
+  parse_args --agent agy numista
   [ "$g_name" = "numista" ]
-  [ "$g_agent" = "gemini" ]
+  [ "$g_agent" = "agy" ]
 }
 
-@test "--agent=gemini numista" {
-  parse_args --agent=gemini numista
-  [ "$g_agent" = "gemini" ]
+@test "--agent=agy numista" {
+  parse_args --agent=agy numista
+  [ "$g_agent" = "agy" ]
 }
 
 @test "--fresh sets the flag" {
@@ -30,10 +30,10 @@ setup() {
   [ "$g_fresh" -eq 1 ]
 }
 
-@test "flags after positional: numista --agent gemini --fresh" {
-  parse_args numista --agent gemini --fresh
+@test "flags after positional: numista --agent agy --fresh" {
+  parse_args numista --agent agy --fresh
   [ "$g_name" = "numista" ]
-  [ "$g_agent" = "gemini" ]
+  [ "$g_agent" = "agy" ]
   [ "$g_fresh" -eq 1 ]
 }
 

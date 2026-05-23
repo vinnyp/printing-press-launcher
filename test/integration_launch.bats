@@ -60,18 +60,18 @@ run_sb() {
   grep -qE 'claude --session-id [0-9a-f-]{36} Enter' "$SB_STUB_LOG"
 }
 
-@test "--agent gemini: launches gemini with a session id" {
+@test "--agent agy: launches agy with a conversation id" {
   export SB_STUB_TMUX_SESSION_EXISTS=false
-  run_sb --agent gemini test
+  run_sb --agent agy test
   [ "$status" -eq 0 ]
-  sb_stub_log_contains 'tmux send-keys -t test gemini --session-id'
+  sb_stub_log_contains 'tmux send-keys -t test agy --conversation'
 }
 
-@test "flag after positional: test --agent gemini" {
+@test "flag after positional: test --agent agy" {
   export SB_STUB_TMUX_SESSION_EXISTS=false
-  run_sb test --agent gemini
+  run_sb test --agent agy
   [ "$status" -eq 0 ]
-  sb_stub_log_contains 'tmux send-keys -t test gemini --session-id'
+  sb_stub_log_contains 'tmux send-keys -t test agy --conversation'
 }
 
 @test "--agent bogus: exit 2, no side effects" {
