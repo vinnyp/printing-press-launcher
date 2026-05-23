@@ -33,6 +33,16 @@ run_sb() {
   ! sb_stub_log_contains 'tmux new-session'
 }
 
+@test "--fresh against a live session: attach only, --fresh ignored" {
+  export SB_STUB_TMUX_SESSION_EXISTS=true
+  mkdir -p "$SB_PROJECTS_DIR/test/.claude"
+  run_sb --fresh test
+  [ "$status" -eq 0 ]
+  sb_stub_log_contains 'tmux attach -t test'
+  ! sb_stub_log_contains 'tmux new-session'
+  ! sb_stub_log_contains 'send-keys'
+}
+
 @test "existing dir, no tmux: resumes with the same stable uuid" {
   export SB_STUB_TMUX_SESSION_EXISTS=false
   mkdir -p "$SB_PROJECTS_DIR/test/.claude"
