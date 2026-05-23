@@ -26,6 +26,14 @@ die() { printf 'sb: %s\n' "$1" >&2; exit "${2:-1}"; }
 usage() { printf '%s\n' "$USAGE" >&2; exit 2; }
 validate_name() { [[ "$1" =~ ^[a-z0-9-]+$ ]] || die "invalid name, must match ^[a-z0-9-]+\$ (got: $1)"; }
 
+agent_binary() {
+  case "$1" in
+    claude) printf 'claude' ;;
+    gemini) printf 'gemini' ;;
+    *) die "unknown agent '$1' (valid: claude, gemini)" 2 ;;
+  esac
+}
+
 # Source guard: tests source this file (BASH_SOURCE[0] != $0) and call functions
 # directly without running main.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then

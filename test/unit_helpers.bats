@@ -35,3 +35,21 @@ setup() {
   run validate_name "pp_foo"
   [ "$status" -ne 0 ]
 }
+
+@test "agent_binary returns claude" {
+  run agent_binary claude
+  [ "$status" -eq 0 ]
+  [ "$output" = "claude" ]
+}
+
+@test "agent_binary returns gemini" {
+  run agent_binary gemini
+  [ "$status" -eq 0 ]
+  [ "$output" = "gemini" ]
+}
+
+@test "agent_binary rejects unknown agent with exit 2" {
+  run agent_binary bogus
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"unknown agent 'bogus'"* ]]
+}
